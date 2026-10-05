@@ -2,7 +2,6 @@ import psycopg2  # type: ignore
 import streamlit as st
 
 
-# --- 1. CONFIGURACIÓN Y CONEXIÓN A LA BASE DE DATOS ---
 def obtener_conexion():
     return psycopg2.connect(
         host=st.secrets["postgres"]["host"],
@@ -13,7 +12,6 @@ def obtener_conexion():
     )
 
 def crear_tabla():
-    # Solo intentará verificar/crear la tabla una vez por sesión del navegador
     if "tabla_verificada" not in st.session_state:
         with obtener_conexion() as conn, conn.cursor() as cursor:
             cursor.execute('''
@@ -28,7 +26,6 @@ def crear_tabla():
             conn.commit()
         st.session_state["tabla_verificada"] = True
 
-# --- 2. FUNCIONES DE LA BASE DE DATOS (CRUD) ---
 def agregar_tarea(titulo, categoria, prioridad):
     with obtener_conexion() as conn:  # noqa: SIM117
         with conn.cursor() as cursor:
@@ -69,10 +66,8 @@ def eliminar_tarea(tarea_id):
         cursor.execute('DELETE FROM tareas WHERE id = %s', (tarea_id,))
         conn.commit()
 
-# --- 3. INTERFAZ DE USUARIO EN STREAMLIT ---
 st.set_page_config(page_title="Tareas Cloud", page_icon=".l.", layout="centered")
 
-# Ejecutar verificación de tabla de forma eficiente
 crear_tabla()
 
 st.title("Tareas")
@@ -80,7 +75,6 @@ st.write("Prueba **Streamlit** y **Supabase**")
 
 st.divider()
 
-# Formulario para agregar una nueva tarea
 st.subheader("➕ Agregar nueva tarea")
 with st.form("form_agregar", clear_on_submit=True):
     nueva_tarea = st.text_input("Descripción de la tarea:")
@@ -97,12 +91,10 @@ with st.form("form_agregar", clear_on_submit=True):
 
 st.divider()
 
-# --- BARRA LATERAL / SECCIÓN DE FILTROS ---
 st.sidebar.header("Filtros de Tareas")
 filtro_estado = st.sidebar.radio("Filtrar por estado:", ["Todas", "Pendientes", "Completadas"])
 filtro_categoria = st.sidebar.selectbox("Filtrar por categoría:", ["Todas", "General", "Trabajo", "Personal", "Estudios", "Hogar"])
 
-# Mostrar lista de tareas
 st.subheader(f"Lista ({filtro_estado})")
 
 lista_tareas = obtener_tareas(filtro_estado, filtro_categoria)
