@@ -15,9 +15,8 @@ def obtener_conexion():
 def crear_tabla():
     # Solo intentará verificar/crear la tabla una vez por sesión del navegador
     if "tabla_verificada" not in st.session_state:
-        with obtener_conexion() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute('''
+        with obtener_conexion() as conn, conn.cursor() as cursor:
+            cursor.execute('''
                     CREATE TABLE IF NOT EXISTS tareas (
                         id SERIAL PRIMARY KEY,
                         titulo TEXT NOT NULL,
@@ -26,7 +25,7 @@ def crear_tabla():
                         completada BOOLEAN NOT NULL DEFAULT FALSE
                     )
                 ''')
-                conn.commit()
+            conn.commit()
         st.session_state["tabla_verificada"] = True
 
 # --- 2. FUNCIONES DE LA BASE DE DATOS (CRUD) ---
@@ -60,7 +59,7 @@ def obtener_tareas(filtro_estado="Todas", filtro_categoria="Todas"):
 
 def cambiar_estado_tarea(tarea_id, estado_actual):
     nuevo_estado = not estado_actual
-    with obtener_conexion() as conn:
+    with obtener_conexion() as conn:  # noqa: SIM117
         with conn.cursor() as cursor:
             cursor.execute('UPDATE tareas SET completada = %s WHERE id = %s', (nuevo_estado, tarea_id))
             conn.commit()
@@ -71,7 +70,7 @@ def eliminar_tarea(tarea_id):
         conn.commit()
 
 # --- 3. INTERFAZ DE USUARIO EN STREAMLIT ---
-st.set_page_config(page_title="Gestor de Tareas Cloud", page_icon="📝", layout="centered")
+st.set_page_config(page_title="Tareas Cloud", page_icon=".l.", layout="centered")
 
 # Ejecutar verificación de tabla de forma eficiente
 crear_tabla()
