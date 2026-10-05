@@ -1,3 +1,5 @@
+import time
+
 import psycopg2  # type: ignore
 import streamlit as st
 
@@ -83,10 +85,10 @@ with st.form("form_agregar", clear_on_submit=True):
     prioridad = col_prio.selectbox("Prioridad:", ["Alta 🔴", "Media 🟡", "Baja 🟢"])
     
     btn_agregar = st.form_submit_button("Agregar Tarea")
-    
     if btn_agregar and nueva_tarea.strip() != "":
         agregar_tarea(nueva_tarea.strip(), categoria, prioridad)
         st.success(f"Tarea '{nueva_tarea}' agregada exitosamente.")
+        time.sleep(1)
         st.rerun()
 
 st.divider()
