@@ -1,54 +1,45 @@
-    
 import psycopg2  # type: ignore
 import streamlit as st
 
 
 # --- 1. CONFIGURACIÓN Y CONEXIÓN A LA BASE DE DATOS ---
 def obtener_conexion():
-    conn = psycopg2.connect(
+    return psycopg2.connect(
         host=st.secrets["postgres"]["host"],
         port=st.secrets["postgres"]["port"],
         dbname=st.secrets["postgres"]["dbname"],
         user=st.secrets["postgres"]["user"],
         password=st.secrets["postgres"]["password"]
     )
-    return conn
 
 def crear_tabla():
-    conn = obtener_conexion()
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tareas (
-            id SERIAL PRIMARY KEY,
-            titulo TEXT NOT NULL,
-            categoria TEXT DEFAULT 'General',
-            prioridad TEXT DEFAULT 'Media',
-            completada BOOLEAN NOT NULL DEFAULT FALSE
-        )
-    ''')
-        
-    conn.commit()
-    cursor.close()
-    conn.close()
+    # Solo intentará verificar/crear la tabla una vez por sesión del navegador
+    if "tabla_verificada" not in st.session_state:
+        with obtener_conexion() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS tareas (
+                        id SERIAL PRIMARY KEY,
+                        titulo TEXT NOT NULL,
+                        categoria TEXT DEFAULT 'General',
+                        prioridad TEXT DEFAULT 'Media',
+                        completada BOOLEAN NOT NULL DEFAULT FALSE
+                    )
+                ''')
+                conn.commit()
+        st.session_state["tabla_verificada"] = True
 
-crear_tabla()
-
+# --- 2. FUNCIONES DE LA BASE DE DATOS (CRUD) ---
 def agregar_tarea(titulo, categoria, prioridad):
-    conn = obtener_conexion()
-    cursor = conn.cursor()
-    cursor.execute(
-        'INSERT INTO tareas (titulo, categoria, prioridad, completada) VALUES (%s, %s, %s, FALSE)',
-        (titulo, categoria, prioridad)
-    )
-    conn.commit()
-    cursor.close()
-    conn.close()
+    with obtener_conexion() as conn:  # noqa: SIM117
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO tareas (titulo, categoria, prioridad, completada) VALUES (%s, %s, %s, FALSE)',
+                (titulo, categoria, prioridad)
+            )
+            conn.commit()
 
 def obtener_tareas(filtro_estado="Todas", filtro_categoria="Todas"):
-    conn = obtener_conexion()
-    cursor = conn.cursor()
-    
     query = 'SELECT id, titulo, categoria, prioridad, completada FROM tareas WHERE 1=1'
     parametros = []
     
@@ -63,33 +54,30 @@ def obtener_tareas(filtro_estado="Todas", filtro_categoria="Todas"):
         
     query += ' ORDER BY id DESC'
     
-    cursor.execute(query, parametros)
-    filas = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return filas
+    with obtener_conexion() as conn, conn.cursor() as cursor:
+        cursor.execute(query, parametros)
+        return cursor.fetchall()
 
 def cambiar_estado_tarea(tarea_id, estado_actual):
-    conn = obtener_conexion()
-    cursor = conn.cursor()
     nuevo_estado = not estado_actual
-    cursor.execute('UPDATE tareas SET completada = %s WHERE id = %s', (nuevo_estado, tarea_id))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    with obtener_conexion() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute('UPDATE tareas SET completada = %s WHERE id = %s', (nuevo_estado, tarea_id))
+            conn.commit()
 
 def eliminar_tarea(tarea_id):
-    conn = obtener_conexion()
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM tareas WHERE id = %s', (tarea_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    with obtener_conexion() as conn, conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tareas WHERE id = %s', (tarea_id,))
+        conn.commit()
 
+# --- 3. INTERFAZ DE USUARIO EN STREAMLIT ---
 st.set_page_config(page_title="Gestor de Tareas Cloud", page_icon="📝", layout="centered")
 
+# Ejecutar verificación de tabla de forma eficiente
+crear_tabla()
+
 st.title("Tareas")
-st.write("Prueba xd **Streamlit** y **Supabase")
+st.write("Prueba **Streamlit** y **Supabase**")
 
 st.divider()
 
@@ -110,10 +98,12 @@ with st.form("form_agregar", clear_on_submit=True):
 
 st.divider()
 
+# --- BARRA LATERAL / SECCIÓN DE FILTROS ---
 st.sidebar.header("Filtros de Tareas")
 filtro_estado = st.sidebar.radio("Filtrar por estado:", ["Todas", "Pendientes", "Completadas"])
 filtro_categoria = st.sidebar.selectbox("Filtrar por categoría:", ["Todas", "General", "Trabajo", "Personal", "Estudios", "Hogar"])
 
+# Mostrar lista de tareas
 st.subheader(f"Lista ({filtro_estado})")
 
 lista_tareas = obtener_tareas(filtro_estado, filtro_categoria)
