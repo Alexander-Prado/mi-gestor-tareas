@@ -18,7 +18,6 @@ def crear_tabla():
     conn = obtener_conexion()
     cursor = conn.cursor()
     
-    # Crear la tabla si no existe en PostgreSQL
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tareas (
             id SERIAL PRIMARY KEY,
@@ -35,7 +34,6 @@ def crear_tabla():
 
 crear_tabla()
 
-# --- 2. FUNCIONES DE LA BASE DE DATOS (CRUD) ---
 def agregar_tarea(titulo, categoria, prioridad):
     conn = obtener_conexion()
     cursor = conn.cursor()
@@ -88,11 +86,10 @@ def eliminar_tarea(tarea_id):
     cursor.close()
     conn.close()
 
-# --- 3. INTERFAZ DE USUARIO EN STREAMLIT ---
 st.set_page_config(page_title="Gestor de Tareas Cloud", page_icon="📝", layout="centered")
 
-st.title("📝 Gestor de Tareas Avanzado")
-st.write("Aplicación sincronizada en tiempo real usando **Streamlit** y **Supabase (PostgreSQL)**.")
+st.title("Tareas")
+st.write("Prueba xd **Streamlit** y **Supabase")
 
 st.divider()
 
@@ -113,13 +110,11 @@ with st.form("form_agregar", clear_on_submit=True):
 
 st.divider()
 
-# --- BARRA LATERAL / SECCIÓN DE FILTROS ---
-st.sidebar.header("🔍 Filtros de Tareas")
+st.sidebar.header("Filtros de Tareas")
 filtro_estado = st.sidebar.radio("Filtrar por estado:", ["Todas", "Pendientes", "Completadas"])
 filtro_categoria = st.sidebar.selectbox("Filtrar por categoría:", ["Todas", "General", "Trabajo", "Personal", "Estudios", "Hogar"])
 
-# Mostrar lista de tareas filtradas
-st.subheader(f"📋 Lista de Tareas ({filtro_estado})")
+st.subheader(f"Lista ({filtro_estado})")
 
 lista_tareas = obtener_tareas(filtro_estado, filtro_categoria)
 
@@ -129,7 +124,6 @@ else:
     for tarea_id, titulo, cat, prio, completada in lista_tareas:
         col_check, col_texto, col_cat, col_prio, col_del = st.columns([0.08, 0.42, 0.2, 0.2, 0.1])
         
-        # Checkbox para cambiar el estado
         estado_check = col_check.checkbox("", value=bool(completada), key=f"check_{tarea_id}")
         if estado_check != bool(completada):
             cambiar_estado_tarea(tarea_id, completada)
