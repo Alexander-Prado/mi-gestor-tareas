@@ -107,7 +107,9 @@ with st.form("form_agregar", clear_on_submit=True):
         st.rerun()
 
 st.divider()
-
+with open("tareas.db", "rb") as fp:
+    st.download_button("Descargar tareas.db", fp, file_name="tareas.db")
+    
 # --- BARRA LATERAL / SECCIÓN DE FILTROS ---
 st.sidebar.header("🔍 Filtros de Tareas")
 filtro_estado = st.sidebar.radio("Filtrar por estado:", ["Todas", "Pendientes", "Completadas"])
