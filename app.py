@@ -1,11 +1,16 @@
-import sqlite3
-
+import psycopg2
 import streamlit as st
 
 
 # --- 1. CONFIGURACIÓN Y CONEXIÓN A LA BASE DE DATOS ---
 def obtener_conexion():
-    conn = sqlite3.connect('tareas.db', check_same_thread=False)
+    conn = psycopg2.connect(
+        host=st.secrets["postgres"]["host"],
+        port=st.secrets["postgres"]["port"],
+        dbname=st.secrets["postgres"]["dbname"],
+        user=st.secrets["postgres"]["user"],
+        password=st.secrets["postgres"]["password"]
+    )
     return conn
 
 def crear_tabla():
@@ -15,7 +20,7 @@ def crear_tabla():
     # Crear la tabla si no existe
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tareas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             titulo TEXT NOT NULL,
             categoria TEXT DEFAULT 'General',
             prioridad TEXT DEFAULT 'Media',
